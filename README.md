@@ -1,7 +1,7 @@
 # saier_lab
 
 ## [Python Program](https://github.com/CobyLsy/saier_lab/blob/main/mmseqs_hmmtop.py)
-- Program that runs `mmseqs search`, `mmseqs convertalis`, and 'hmmtop' on designated files
+- Program that runs `mmseqs search`, `mmseqs convertalis`, and `hmmtop` on designated files
 - Result files from `convertalis` and `hmmtop` will be organized and stored into two dictionary objects (see **Sample Run** for example)
 - Program asks for 3 input files (2 for both `search` and `convertalis` and 1 for `hmmtop`), and 2 names for output files (1 for both `search` and `convertalis` and 1 for `hmmtop`)
 
