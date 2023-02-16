@@ -35,6 +35,19 @@ with open(result_str + ".tab", 'r') as f:
     for line in f:
         # Split the line by tabs
         fields = line.strip().split('\t')
+        fields[2] = int(fields[2]) #alnlen
+        fields[3] = float(fields[3]) #evalue
+        fields[4] = int(fields[4]) #bits
+        fields[5] = float(fields[5]) #pident
+        fields[6] = int(fields[6]) #qstart
+        fields[7] = int(fields[7]) #qend
+        fields[8] = int(fields[8]) #qlen
+        fields[9] = float(fields[9]) #qcov
+        fields[10] = int(fields[10]) #tstart
+        fields[11] = int(fields[11]) #tend
+        fields[12] = int(fields[12]) #tlen
+        fields[13] = float(fields[13]) #tcov
+
         # Create a dictionary using the header as the keys and the fields as the values
         blast_result = {header[i]: fields[i] for i in range(len(header))}
         # Use the first field as the key to the nested dictionary
@@ -58,15 +71,12 @@ with open( hmmResult_str + '.hmmtop', 'r') as f:
         fields = l.strip().split()
         # empty list for individual line
         hmmtop_result = {}
-        # ProteinLen indication is parsed into two fields because of the space
-        # restore protein length to one object
-        combined_protlen = fields[0] + fields[1]
         # create list to store pairs of tms
         tms_list = []
         for i in range(5, len(fields), 2):
-            tms_pairs = [fields[i], fields[i+1]]
+            tms_pairs = [int(fields[i]), int(fields[i+1])]
             tms_list.append(tms_pairs)
-        hmmtop_result = {fieldNames[0]:combined_protlen, fieldNames[1]:fields[4], fieldNames[2]:tms_list}
+        hmmtop_result = {fieldNames[0]:int(fields[1]), fieldNames[1]:int(fields[4]), fieldNames[2]:tms_list}
         hmmtop_dict[fields[2]] = hmmtop_result
     
 
