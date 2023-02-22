@@ -25,6 +25,12 @@ hmmtop_cmd = ['hmmtop', '-if=' + faa_str, '-of=' + hmmResult_str + '.hmmtop']
 if os.path.isfile(hmmResult_str + '.hmmtop') == False:
     subprocess.run(hmmtop_cmd, check = True)
 
+#Download Substrate Data
+substrate_str = input('Name the file to store substrate data: ')
+substrate_cmd = ['wget', '-O', substrate_str + '.tsv', 'https://tcdb.org/cgi-bin/substrates/getSubstrates.py']
+if os.path.isfile(substrate_str + '.tsv') == False:
+    subprocess.run(substrate_cmd, check = True)
+
 #Open the tab file for reading
 with open(result_str + ".tab", 'r') as f:
     # Read the header line and split it by tabs
@@ -82,3 +88,20 @@ with open( hmmResult_str + '.hmmtop', 'r') as f:
 
 # Print the resulting dictionary
 print(hmmtop_dict)
+
+with open( substrate_str + '.tsv', 'r') as f:
+    # Initialize an empty dictionary
+    substrate_dict = {}
+    # Read through each line of the file
+    for line in f:
+        # Split the line by tabs
+        fields = line.strip().split('\t')
+        chebi = fields[1].split('|')
+        element = []
+        for i in chebi:
+            rawPair = i.split(';')
+            pair = [int(rawPair[0].split(":")[1]), rawPair[1]]
+            element.append(pair)
+        substrate_dict[fields[0]] = element
+
+print(substrate_dict)
