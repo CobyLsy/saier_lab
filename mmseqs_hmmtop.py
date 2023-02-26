@@ -1,6 +1,6 @@
 import subprocess
 import os
-
+from subprocess import call
 
 #Ask for names of query and target databases, and Ask to name the result database
 query_str = input("Enter query database: ")
@@ -8,15 +8,29 @@ target_str = input("Enter target database: ")
 result_str = input("Name the result database from mmseqs search: ")
 
 #Perform mmseqs_search
-search_cmd = ['mmseqs', 'search', query_str, target_str, result_str, 'tmp']
+search_cmd = ['mmseqs', 'search', query_str, target_str, result_str, 'tmp', '-a']
 if os.path.isfile(result_str + ".dbtype") == False:
     subprocess.run(search_cmd, check = True)
 
 #Perform mmseqs_convertalis
-flags = 'query,target,alnlen,evalue,bits,pident,qstart,qend,qlen,qcov,tstart,tend,tlen,tcov'
+flags = 'query,target,alnlen,evalue,bits,pident,qstart,qend,qlen,qcov,tstart,tend,tlen,tcov,qaln,taln'
 convertalis_cmd = ['mmseqs', 'convertalis', query_str, target_str, result_str, result_str + ".tab", "--format-mode", "4","--format-output", flags]
 if os.path.isfile(result_str + ".tab") == False:
     subprocess.run(convertalis_cmd, check = True)
+
+#Convert Result From mmseqs alignment to fasta format
+awkParse = '{print ">"$1; print $15}'
+sedOne = '1,2d'
+sedTwo = '/^>/! s/-//g'
+
+if os.path.isfile(result_str + '_final.faa') == False:
+    call('awk ' + "'" + awkParse + "'" + ' ' + result_str + '.tab > ' + result_str + '.faa', shell = True)
+    call('sed ' + "'" + sedOne + "'" + ' ' + result_str + '.faa > ' + result_str + '_f.faa', shell = True)
+    call('sed ' + "'" + sedTwo + "'" + ' ' + result_str + '_f.faa > ' + result_str + '_final.faa', shell = True)
+    call('rm ' + result_str + '.faa', shell = True)
+    call('rm ' + result_str + '_f.faa', shell = True) 
+
+print("Converted result file from mmseqs search to FASTA format as: " + result_str + "_final.faa" + " for use in hmmtop")
 
 #Perform hmmtop
 faa_str = input('Enter file name to run hmmtop on: ')
@@ -26,7 +40,7 @@ if os.path.isfile(hmmResult_str + '.hmmtop') == False:
     subprocess.run(hmmtop_cmd, check = True)
 
 #Download Substrate Data
-substrate_str = input('Name the file to store substrate data: ')
+substrate_str = input('Name the file to store substrate data (without .tsv): ')
 substrate_cmd = ['wget', '-O', substrate_str + '.tsv', 'https://tcdb.org/cgi-bin/substrates/getSubstrates.py']
 if os.path.isfile(substrate_str + '.tsv') == False:
     subprocess.run(substrate_cmd, check = True)
@@ -62,7 +76,7 @@ with open(result_str + ".tab", 'r') as f:
         mmseqs_dict[key] = blast_result
 
 # Print the resulting dictionary
-print(mmseqs_dict)
+#print(mmseqs_dict)
 
 # Open the .hmmtop file for reading
 with open( hmmResult_str + '.hmmtop', 'r') as f:
@@ -71,7 +85,6 @@ with open( hmmResult_str + '.hmmtop', 'r') as f:
     # Manually create names for fields
     fieldNames = ["protlen", "ntms","tms"]
     # Read through each line of the file
-    
     for l in f:
         # Split the line by spaces
         fields = l.strip().split()
@@ -104,4 +117,4 @@ with open( substrate_str + '.tsv', 'r') as f:
             element.append(pair)
         substrate_dict[fields[0]] = element
 
-print(substrate_dict)
+#print(substrate_dict)
