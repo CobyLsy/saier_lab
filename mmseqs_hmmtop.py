@@ -13,38 +13,12 @@ if os.path.isfile(result_str + ".dbtype") == False:
     subprocess.run(search_cmd, check = True)
 
 #Perform mmseqs_convertalis
-flags = 'query,target,alnlen,evalue,bits,pident,qstart,qend,qlen,qcov,tstart,tend,tlen,tcov,qaln,taln'
+flags = 'query,target,alnlen,evalue,bits,pident,qstart,qend,qlen,qcov,tstart,tend,tlen,tcov,qaln,taln,qseq,tseq'
 convertalis_cmd = ['mmseqs', 'convertalis', query_str, target_str, result_str, result_str + ".tab", "--format-mode", "4","--format-output", flags]
 if os.path.isfile(result_str + ".tab") == False:
     subprocess.run(convertalis_cmd, check = True)
 
-#Convert Result From mmseqs alignment to fasta format
-awkParse = '{print ">"$1; print $15}'
-sedOne = '1,2d'
-sedTwo = '/^>/! s/-//g'
-
-if os.path.isfile(result_str + '_final.faa') == False:
-    call('awk ' + "'" + awkParse + "'" + ' ' + result_str + '.tab > ' + result_str + '.faa', shell = True)
-    call('sed ' + "'" + sedOne + "'" + ' ' + result_str + '.faa > ' + result_str + '_f.faa', shell = True)
-    call('sed ' + "'" + sedTwo + "'" + ' ' + result_str + '_f.faa > ' + result_str + '_final.faa', shell = True)
-    call('rm ' + result_str + '.faa', shell = True)
-    call('rm ' + result_str + '_f.faa', shell = True) 
-
-print("Converted result file from mmseqs search to FASTA format as: " + result_str + "_final.faa" + " for use in hmmtop")
-
-#Perform hmmtop
-faa_str = input('Enter file name to run hmmtop on: ')
-hmmResult_str = input('Name the result file from hmmtop (name only, without .hmmtop): ')
-hmmtop_cmd = ['hmmtop', '-if=' + faa_str, '-of=' + hmmResult_str + '.hmmtop']
-if os.path.isfile(hmmResult_str + '.hmmtop') == False:
-    subprocess.run(hmmtop_cmd, check = True)
-
-#Download Substrate Data
-substrate_str = input('Name the file to store substrate data (without .tsv): ')
-substrate_cmd = ['wget', '-O', substrate_str + '.tsv', 'https://tcdb.org/cgi-bin/substrates/getSubstrates.py']
-if os.path.isfile(substrate_str + '.tsv') == False:
-    subprocess.run(substrate_cmd, check = True)
-
+#Convert BLAST tab file into dictionary
 #Open the tab file for reading
 with open(result_str + ".tab", 'r') as f:
     # Read the header line and split it by tabs
@@ -76,7 +50,32 @@ with open(result_str + ".tab", 'r') as f:
         mmseqs_dict[key] = blast_result
 
 # Print the resulting dictionary
-#print(mmseqs_dict)
+
+print(mmseqs_dict)
+#Convert Result From mmseqs alignment to fasta format
+if os.path.isfile(result_str + '.faa') == False:
+    call('touch ' + result_str + '.faa', shell = True)
+
+ofile = open(result_str + '.faa', "w")
+for key in mmseqs_dict:
+    ofile.write(">" + key + "\n" + mmseqs_dict[key]['qseq'] + "\n" + ">" + mmseqs_dict[key]['target'] + "\n" + mmseqs_dict[key]['tseq'] + "\n")
+
+print("Converted result file from mmseqs search to FASTA format as: " + result_str + ".faa" + " for use in hmmtop")
+
+#Perform hmmtop
+faa_str = input('Enter file name to run hmmtop on: ')
+hmmResult_str = input('Name the result file from hmmtop (name only, without .hmmtop): ')
+hmmtop_cmd = ['hmmtop', '-if=' + faa_str, '-of=' + hmmResult_str + '.hmmtop']
+if os.path.isfile(hmmResult_str + '.hmmtop') == False:
+    subprocess.run(hmmtop_cmd, check = True)
+
+#Download Substrate Data
+substrate_str = input('Name the file to store substrate data (without .tsv): ')
+substrate_cmd = ['wget', '-O', substrate_str + '.tsv', 'https://tcdb.org/cgi-bin/substrates/getSubstrates.py']
+if os.path.isfile(substrate_str + '.tsv') == False:
+    subprocess.run(substrate_cmd, check = True)
+
+
 
 # Open the .hmmtop file for reading
 with open( hmmResult_str + '.hmmtop', 'r') as f:
@@ -98,9 +97,8 @@ with open( hmmResult_str + '.hmmtop', 'r') as f:
         hmmtop_result = {fieldNames[0]:int(fields[1]), fieldNames[1]:int(fields[4]), fieldNames[2]:tms_list}
         hmmtop_dict[fields[2]] = hmmtop_result
     
-
 # Print the resulting dictionary
-print(hmmtop_dict)
+# print(hmmtop_dict)
 
 with open( substrate_str + '.tsv', 'r') as f:
     # Initialize an empty dictionary
