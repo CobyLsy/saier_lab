@@ -24,52 +24,63 @@ talnEndPos = talnStartPos + len(talnClean)#760
 overlaps = 0
 #Minimum Residue Number for an overlap to be counted
 minRes = 8
-#filtering out TMS that are completely outside aligned regions
+
+qTMSWithin = []
+tTMSWithin = []
 for i in (i for i in qTMS if not i[0] > qalnEndPos and not i[1] < qalnStartPos): 
-    print(i)
-    tempQString = qseq[i[0]:i[1]]
+    qTMSStart = i[0]
+    qTMSEnd = i[1]
+    
     # starting position of TMS out of aligment range
     if i[0] < qalnStartPos:
-        tempQString = qseq[qalnStartPos:i[1]]
-
-        #starting and ending positions of TMS both out of alignment range
-        if i[1] > qalnEndPos:
-            tempQString = qseq[qalnStartPos:qalnEndPos]
+        qTMSStart = qalnStartPos
+    #ending position of TMS out of alignment range
+    if i[1] > qalnEndPos:
+        qTMSEnd = qalnEndPos
     
-    # ending position of TMS out of alignment range
-    elif i[1] > qalnEndPos:
-        tempQString = qseq[i[0]:qalnEndPos]
+    qTMSgaps = (qaln[qTMSStart - qalnStartPos:qTMSEnd - qalnStartPos + 1]).count("-")
+    qTMSEnd += qTMSgaps
+    qTMSWithin.append([qTMSStart - qalnStartPos, qTMSEnd - qalnStartPos + 1])
 
-    #At this Point, tempQString is finalized
-    print(tempQString)
+for j in (j for j in tTMS if not j[0] > talnEndPos and not j[1] < talnStartPos):
+    tTMSStart = j[0]
+    tTMSEnd = j[1]
 
-    for j in (j for j in tTMS if not j[0] > talnEndPos and not j[1] < talnStartPos):
-        sameRes = 0
-        print(j)
-        tempTString = tseq[j[0]:j[1]]
-        # starting position of TMS out of alignment range
-        if j[0] < talnStartPos:
-            tempTString = tseq[talnStartPos:j[1]]
+    #starting position of TMS out of alignment range
+    if j[0] < talnStartPos:
+        tTMSStart = talnStartPos
+    #ending position of TMS out of alignment range
+    if j[1] > talnEndPos:
+        tTMSEnd = talnEndPos
+    
+    tTMSgaps = (taln[tTMSStart - talnStartPos:tTMSEnd - talnStartPos + 1]).count("-")
+    tTMSEnd += tTMSgaps
+    tTMSWithin.append([tTMSStart - talnStartPos, tTMSEnd - talnStartPos + 1])
+    
+print (qTMSWithin)
+print (qseq[187:205 + 1])
+print (qaln[qTMSWithin[0][0]:qTMSWithin[0][1]])
+print (tTMSWithin)
+print (taln[tTMSWithin[0][0]:tTMSWithin[0][1]])
 
-            #starting and ending positions of TMS both out of alignment range
-            if j[1] > talnEndPos:
-                tempTString = tseq[talnStartPos:talnEndPos]
+for k in qTMSWithin:
+    compStart = k[0]
+    compEnd = k[1]
 
-        #ending position of TMS out of alignment range
-        elif j[1] > talnEndPos:
-            tempTString = tseq[j[0]:talnEndPos]
-        
-        #At this point, tempTString is finalized
-        print(tempTString)
-        
-        for loc in range (0, len(tempQString)) :
-            if (loc < len(tempTString)):
-                if tempQString[loc] == tempTString[loc]:
-                    sameRes += 1
-        
-        print(sameRes)
-        if sameRes >= minRes:
-            overlaps += 1
+    for o in (o for o in tTMSWithin if not o[0] > compEnd and not o[1] < compStart):
+        if o[0] > compStart:
+            compStart = o[0]
+        if o[1] < compEnd:
+            compEnd = o[1]
 
-        
+    matched = 0
+    for p in range(compStart, compEnd):
+        if (qaln[p] == taln[p]):
+            matched += 1
+    
+    #matched = 3 for this pair 
+    if matched >= minRes:
+        overlaps += 1
+
+print(overlaps)
 
