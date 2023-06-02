@@ -1,10 +1,11 @@
 import subprocess
 import os
+import copy
 from subprocess import call
 
 #Perform mmseqs_search
 def runSearch(query, target, result):
-    search_cmd = ['mmseqs', 'search', query, target, result, 'tmp', '-a']
+    search_cmd = ['mmseqs', 'search', query, target, result, 'tmp', '-a', '--gap-open', 'aa:9,nucl:5', '--gap-extend', 'aa:1,nucl:2']
     if os.path.isfile(result + ".dbtype") == False:
         subprocess.run(search_cmd, check = True)
 
@@ -12,8 +13,8 @@ def runSearch(query, target, result):
 
 #Perform mmseqs_convertalis
 def runConvertalis(query, target, result):
-    flags = 'query,target,alnlen,evalue,bits,pident,qstart,qend,qlen,qcov,tstart,tend,tlen,tcov,qaln,taln,qseq,tseq'
-    convertalis_cmd = ['mmseqs', 'convertalis', query, target, result, result + ".tab", "--format-mode", "4","--format-output", flags]
+    column_labels = 'query,target,alnlen,evalue,bits,pident,qstart,qend,qlen,qcov,tstart,tend,tlen,tcov,qaln,taln,qseq,tseq'
+    convertalis_cmd = ['mmseqs', 'convertalis', query, target, result, result + ".tab", "--format-mode", "4","--format-output", column_labels]
     if os.path.isfile(result + ".tab") == False:
         subprocess.run(convertalis_cmd, check = True)
 
@@ -158,26 +159,28 @@ def overlapDict(mmseqsDict, hmmtopDict, minRes):
 
 
     def oneToZeroIndexed(coords):
-        for i in coords:
+        newcoords = copy.deepcopy(coords)
+        for i in newcoords:
             i[0] = i[0] - 1
             i[1] = i[1] - 1
-        return coords
+        return newcoords
 
 
-    #Assume coords have been already corrected to 0-based indeces
+    #Assume coords have been already corrected to 0-based indices
     def realRMScoords (coords, alnStart, alnEnd):
+        newcoords = copy.deepcopy(coords)
 	    #Remove TMSs that are not in the alignment region
 	    #using the equation:
 	    #   relTMCScoord = hmmtopCoord - alnStart
         returnTMS = []
-        for i in coords:
+        for i in newcoords:
             i[0] = i[0] - alnStart
             i[1] = i[1] - alnStart
 
             if i [1] <= 0:
                 continue
 
-            elif i[0] >= alnEnd:
+            elif i[0] >= alnEnd - alnStart:
                 continue
         
             else:
@@ -272,7 +275,7 @@ def overlapDict(mmseqsDict, hmmtopDict, minRes):
         overlaps = overlapScore(qTMSWithin, tTMSWithin, qaln, taln)
         targetAndOverlap = {}
         targetAndOverlap['target'] = tAccession
-        targetAndOverlap['Overlaps'] = overlaps
+        targetAndOverlap['alignedTMS'] = overlaps
 
         overlap_dict[key] = targetAndOverlap
 
@@ -316,6 +319,19 @@ def main():
 
     mmseqs_dict = blastDict(result_str)
     # Print the resulting dictionary for checking
+
+    ################################
+    eValueRangeDict = {}
+    for key in  mmseqs_dict:
+        #if mmseqs_dict[key]['evalue'] >= 1e-15 and mmseqs_dict[key]['evalue'] <= 1e-10:
+        #if mmseqs_dict[key]['evalue'] > 1e-10 and mmseqs_dict[key]['evalue'] <= 1e-7:
+        if mmseqs_dict[key]['evalue'] > 1e-7 and mmseqs_dict[key]['evalue'] <= 1e-4:
+            eValueRangeDict[key] = mmseqs_dict[key]
+    
+    eValueRangeDict = dict(sorted(eValueRangeDict.items()))
+    print(len(eValueRangeDict))
+    ################################
+
     #print(mmseqs_dict)
     print("length of mmseqs_dict is:" + str(len(mmseqs_dict)))
 
@@ -337,6 +353,10 @@ def main():
 
     # Print the resulting dictionary
     #print(hmmtop_dict)
+    ##########################################
+    #for key in eValueRangeDict:
+        #print(hmmtop_dict[key])
+    ##########################################
 
     print("length of the hmmtop_dict is:" + str(len(hmmtop_dict))) #1002
 
@@ -355,6 +375,27 @@ def main():
         minRes = input('Enter the desired minimum residues number:')
 
     overlap_dict = overlapDict(mmseqs_dict, hmmtop_dict, minRes)
-    print(overlap_dict)
+    #print(overlap_dict)
+    #print(len(overlap_dict))
 
+    #######################################
+
+    Muelsyse = 0
+    for key in eValueRangeDict:
+        #print(key + ' : ' + str(overlap_dict[key]))
+        Muelsyse = Muelsyse + 1
+
+        
+        #swTest_cmd = ['bash', 'swTest.ssh', key, eValueRangeDict[key]['target']]
+        
+        print(str(Muelsyse) + '. ' + key + ' : ' + str(overlap_dict[key]))
+        #subprocess.run(swTest_cmd, check = True)
+        
+    print(Muelsyse)
+    print(eValueRangeDict['WP_013264943.1'])
+    print(hmmtop_dict['WP_013264943.1'])
+    print(hmmtop_dict['3.D.1.9.3-Q8EYE3'])
+    print(overlap_dict['WP_013264943.1'])
+    #######################################
+    
 main()
