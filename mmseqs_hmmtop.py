@@ -124,7 +124,11 @@ def hmmtopDict(hmmResult):
             hmmtop_result = {}
             # create list to store pairs of tms
             tms_list = []
-            for i in range(5, len(fields), 2):
+            tempTMSPos = 0
+            for i in range (len(fields)):
+                if fields[i] == 'IN' or fields[i] == 'OUT':
+                    tempTMSPos = i
+            for i in range(tempTMSPos + 2, len(fields), 2):
                 tms_pairs = [int(fields[i]), int(fields[i+1])]
                 tms_list.append(tms_pairs)
             hmmtop_result = {fieldNames[0]:int(fields[1]), fieldNames[1]:int(fields[4]), fieldNames[2]:tms_list}
@@ -352,7 +356,7 @@ def main():
     hmmtop_dict = hmmtopDict(hmmResult_str)
 
     # Print the resulting dictionary
-    #print(hmmtop_dict)
+    print(hmmtop_dict)
     ##########################################
     #for key in eValueRangeDict:
         #print(hmmtop_dict[key])
@@ -392,10 +396,6 @@ def main():
         #subprocess.run(swTest_cmd, check = True)
         
     print(Muelsyse)
-    print(eValueRangeDict['WP_013264943.1'])
-    print(hmmtop_dict['WP_013264943.1'])
-    print(hmmtop_dict['3.D.1.9.3-Q8EYE3'])
-    print(overlap_dict['WP_013264943.1'])
     #######################################
     
 main()
