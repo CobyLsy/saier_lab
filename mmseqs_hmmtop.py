@@ -3,6 +3,13 @@ import os
 import copy
 from subprocess import call
 
+#Perform mmseqs_createdb
+def runCreateDB(fastaFileName):
+    createDB_cmd = ['mmseqs', 'createdb', fastaFileName, fastaFileName + 'DB']
+    if os.path.isfile(fastaFileName + 'DB') == False:
+        subprocess.run(createDB_cmd, check=True)
+
+
 #Perform mmseqs_search
 def runSearch(query, target, result):
     search_cmd = ['mmseqs', 'search', query, target, result, 'tmp', '-a', '--gap-open', 'aa:9,nucl:5', '--gap-extend', 'aa:1,nucl:2']
@@ -313,6 +320,11 @@ overlap_dict = overlapDict(tempMmseqs, tempHmmtop, minRes)
 
 
 def main():
+    qFasta_str = input("Enter query fasta file you wish to convert to mmseqs-database type:")
+    tFasta_str = input("Enter target fasta file you wish to convert to mmseqs-database type:")
+    runCreateDB(qFasta_str)
+    runCreateDB(tFasta_str)
+    
     #Ask for names of query and target databases, and Ask to name the result database
     query_str = input("Enter query database: ")
     target_str = input("Enter target database: ")
